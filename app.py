@@ -4,7 +4,8 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello_world():
-    return 'Hello, World! This is my first CI/CD Pipeline from scratch.'
+    return 'Hello, World! This is my first CI/CD Pipeline from scratch.' \
+    'The pipeline is fully automated!'
 
 if __name__ == '__main__':
     # Listens on all network interfaces, essential for Docker
