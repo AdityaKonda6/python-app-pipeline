@@ -1,59 +1,50 @@
------
+# CI/CD Pipeline for a Python Flask Application
 
-# CI/CD Pipeline for a Python Web Application
+## 📖 Project Summary
+This project demonstrates a complete, end-to-end Continuous Integration and Continuous Deployment (CI/CD) pipeline for a simple web application built with **Python** and **Flask**. The primary goal is to showcase a fully automated workflow that takes code from a `git push` and deploys it as a live Docker container on an AWS EC2 instance without any manual intervention.
 
-This repository contains the source code for a simple web application built with **Python** and **Flask**.
+---
 
-The primary purpose of this project is to serve as a practical, hands-on demonstration of a complete, end-to-end **Continuous Integration and Continuous Deployment (CI/CD) pipeline** built with Jenkins, Docker, and AWS.
+## 🏛️ Architecture Diagram
+The pipeline follows a logical, event-driven workflow. A `git push` to the main branch initiates a sequence of automated steps, as illustrated below.
 
-## 🚀 The CI/CD Pipeline
 
-This project is fully automated. The pipeline takes code from a `git push` and automatically deploys it as a live Docker container on a cloud server.
+**Workflow Breakdown:**
+`Git Push` → `GitHub Webhook` → `Jenkins Server` → `Build & Test` → `Build Docker Image` → `Push to Docker Hub` → `Deploy to AWS EC2`
 
-**Workflow:** `Git Push` -\> `GitHub Webhook` -\> `Jenkins Server (AWS EC2)` -\> `Build Docker Image` -\> `Push to Docker Hub` -\> `Deploy to AWS EC2`
+1.  **Trigger:** A developer pushes code to the `main` branch on GitHub.
+2.  **CI Server:** A GitHub Webhook notifies the Jenkins server, which automatically triggers a new pipeline run.
+3.  **Build & Package:** Jenkins checks out the code, and using the `Dockerfile`, builds a new Docker image containing the Flask application and its dependencies.
+4.  **Registry:** The newly built image is tagged with a unique identifier and pushed to a Docker Hub repository.
+5.  **Deployment:** Jenkins securely connects to the production EC2 server, pulls the latest Docker image from Docker Hub, stops the old container, and starts a new one with the updated image.
 
-1.  **Continuous Integration (CI):**
+---
 
-      * A GitHub **webhook** is configured to notify a **Jenkins** server (hosted on an AWS EC2 instance) on every `git push` to the `main` branch. This automatically triggers a new pipeline run.
+## 🛠️ Technologies Used
+This project utilizes a modern DevOps toolchain to achieve full automation.
 
-2.  **Build & Package:**
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Jenkins](https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=jenkins&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
+![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
 
-      * The Jenkins pipeline, defined as code in the `Jenkinsfile`, checks out the latest source code.
-      * It then uses the `Dockerfile` to build a new **Docker image** containing the Python application and all of its dependencies from the `requirements.txt` file.
+---
 
-3.  **Registry:**
-
-      * The newly built and tagged Docker image is then pushed to a repository on **Docker Hub**.
-
-4.  **Continuous Deployment (CD):**
-
-      * The final stage of the pipeline pulls the latest image from Docker Hub onto the EC2 server.
-      * It then automatically stops the old running container and starts a new container from the new image, making the changes live instantly.
-
------
-
-## 🛠️ Technology Stack
-
-  * **Application:** Python, Flask
-  * **CI/CD & Cloud:** Jenkins, Docker, AWS (EC2), Git, GitHub (Webhooks)
-  * **Operating System:** Linux (Ubuntu)
-
------
-
-## ⚙️ Getting Started (Local Development)
-
+## ⚙️ Setup and Execution (Local)
 To run the Python application on your local machine without the pipeline.
 
 ### Prerequisites
-
-  * Python 3 and `pip` installed.
-  * `git` installed.
+* Python 3 and `pip` installed.
+* `git` installed.
 
 ### Installation & Running
-
 1.  Clone the repository:
     ```sh
-    git clone https://github.com/AdityaKonda6/python-app-pipeline.git
+    git clone [https://github.com/AdityaKonda6/python-app-pipeline.git](https://github.com/AdityaKonda6/python-app-pipeline.git)
     ```
 2.  Navigate to the project directory:
     ```sh
@@ -69,7 +60,33 @@ To run the Python application on your local machine without the pipeline.
     ```
 5.  Open `http://127.0.0.1:80` in your browser.
 
------
+---
+
+## 💡 Challenges & Solutions
+This section documents a key technical challenge encountered during the pipeline setup and the steps taken to resolve it.
+
+### Challenge: Jenkins Failing with Docker "Permission Denied"
+A common and critical issue arose where the Jenkins pipeline would consistently fail during the Docker build stage.
+
+* **Problem:** The Jenkins console output showed a clear error: `permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock`. This indicated that the `jenkins` user, which executes the pipeline, did not have the necessary permissions to interact with the Docker engine.
+
+* **Diagnostic Process:**
+    1.  I connected to the EC2 instance via SSH.
+    2.  I switched from the default user to the `jenkins` user with the command: `sudo su - jenkins`.
+    3.  I then tried to execute a basic Docker command, `docker ps`, to confirm the issue. This command failed with the exact same "permission denied" error, isolating the problem to a user-level permission issue on the host machine, not a flaw in the `Jenkinsfile` or Docker setup itself.
+
+* **Solution:** On Linux systems, the Docker daemon socket is owned by the `root` user and the `docker` group. To allow a non-root user to run Docker commands, they must be added to the `docker` group.
+    1.  I added the `jenkins` user to the `docker` group using the following command:
+        ```sh
+        sudo usermod -aG docker jenkins
+        ```
+    2.  For the group membership changes to take effect, the Jenkins service needed to be restarted:
+        ```sh
+        sudo systemctl restart jenkins
+        ```
+    After restarting, the Jenkins pipeline executed successfully, as the user now had the required permissions to communicate with the Docker socket.
+
+  -----
 
 
 
